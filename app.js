@@ -8,34 +8,49 @@
   'use strict';
 
   // --------------------------------------------------------------------------
-  // Storage Key & Constants
+  // Storage Keys & Theme Configuration
   // --------------------------------------------------------------------------
   const STORAGE_KEY = 'apex_sales_data_v1';
+  const THEME_STORAGE_KEY = 'apex_sales_theme_pref';
 
-  // Color Palette Constants for Charts (pure hex/rgb, no CSS variables)
-  const COLORS = {
-    primary: '#4f46e5',
-    primaryLight: 'rgba(79, 70, 229, 0.15)',
-    primaryGradientStart: 'rgba(79, 70, 229, 0.35)',
-    primaryGradientEnd: 'rgba(79, 70, 229, 0.0)',
-    secondary: '#0891b2',
-    secondaryLight: 'rgba(8, 145, 178, 0.15)',
-    emerald: '#10b981',
-    amber: '#f59e0b',
-    purple: '#8b5cf6',
-    pink: '#ec4899',
-    slate: '#64748b',
-    gridLine: '#e2e8f0',
-    textMuted: '#94a3b8',
-    textDark: '#0f172a',
-    categoryPalette: [
-      '#4f46e5', // Electronics
-      '#0891b2', // Software & SaaS
-      '#10b981', // Apparel & Fashion
-      '#f59e0b', // Home & Office
-      '#8b5cf6'  // Professional Services
-    ]
-  };
+  function isDarkMode() {
+    return document.documentElement.classList.contains('dark-mode') || document.body.classList.contains('dark-mode');
+  }
+
+  // Dynamic Theme Colors for Canvas Charts (Zero CSS variables)
+  function getThemeColors() {
+    const isDark = isDarkMode();
+    return {
+      primary: isDark ? '#818cf8' : '#4f46e5',
+      primaryLight: isDark ? 'rgba(129, 140, 248, 0.25)' : 'rgba(79, 70, 229, 0.15)',
+      primaryGradientStart: isDark ? 'rgba(129, 140, 248, 0.45)' : 'rgba(79, 70, 229, 0.35)',
+      primaryGradientEnd: 'rgba(129, 140, 248, 0.0)',
+      secondary: isDark ? '#22d3ee' : '#0891b2',
+      secondaryLight: isDark ? 'rgba(34, 211, 238, 0.25)' : 'rgba(8, 145, 178, 0.15)',
+      emerald: '#10b981',
+      amber: '#f59e0b',
+      purple: '#8b5cf6',
+      pink: '#ec4899',
+      slate: '#64748b',
+      gridLine: isDark ? '#334155' : '#e2e8f0',
+      textMuted: isDark ? '#94a3b8' : '#64748b',
+      textDark: isDark ? '#f8fafc' : '#0f172a',
+      trackBg: isDark ? '#0f172a' : '#f1f5f9',
+      categoryPalette: isDark ? [
+        '#818cf8', // Indigo
+        '#22d3ee', // Cyan
+        '#34d399', // Emerald
+        '#fbbf24', // Amber
+        '#c084fc'  // Purple
+      ] : [
+        '#4f46e5', // Electronics
+        '#0891b2', // Software & SaaS
+        '#10b981', // Apparel & Fashion
+        '#f59e0b', // Home & Office
+        '#8b5cf6'  // Professional Services
+      ]
+    };
+  }
 
   // --------------------------------------------------------------------------
   // Seed Data Generator
@@ -176,6 +191,67 @@
     editingTransactionId: null,
     deletingTransactionId: null
   };
+
+  // --------------------------------------------------------------------------
+  // Theme Management (Light / Dark Mode with Persistence)
+  // --------------------------------------------------------------------------
+  function initTheme() {
+    let savedTheme = null;
+    try {
+      savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    } catch (e) {}
+
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const initialTheme = savedTheme || (prefersDark ? 'dark' : 'light');
+
+    applyTheme(initialTheme, false);
+
+    // Watch for OS theme changes if user has not explicitly stored preference
+    if (window.matchMedia) {
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        try {
+          if (!localStorage.getItem(THEME_STORAGE_KEY)) {
+            applyTheme(e.matches ? 'dark' : 'light', true);
+          }
+        } catch (err) {}
+      });
+    }
+  }
+
+  function applyTheme(theme, redraw = true) {
+    const isDark = theme === 'dark';
+    if (isDark) {
+      document.documentElement.classList.add('dark-mode');
+      document.body.classList.add('dark-mode');
+    } else {
+      document.documentElement.classList.remove('dark-mode');
+      document.body.classList.remove('dark-mode');
+    }
+
+    const toggleBtn = document.getElementById('themeToggleBtn');
+    if (toggleBtn) {
+      const tooltip = isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+      toggleBtn.setAttribute('title', tooltip);
+      toggleBtn.setAttribute('aria-label', tooltip);
+    }
+
+    if (redraw) {
+      const currentPeriodItems = filterByTimeRange(state.transactions, state.filters.timeRange);
+      renderTrendChart(currentPeriodItems);
+      renderCategoryChart(currentPeriodItems);
+      renderRegionChart(currentPeriodItems);
+    }
+  }
+
+  function toggleTheme() {
+    const isDark = isDarkMode();
+    const newTheme = isDark ? 'light' : 'dark';
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, newTheme);
+    } catch (e) {}
+    applyTheme(newTheme, true);
+    showToast(`${newTheme === 'dark' ? 'Dark' : 'Light'} mode enabled.`, 'info');
+  }
 
   // --------------------------------------------------------------------------
   // Storage Helpers
@@ -520,6 +596,8 @@
     const { ctx, width, height } = setupCanvas(canvas);
     ctx.clearRect(0, 0, width, height);
 
+    const colors = getThemeColors();
+
     if (items.length === 0) {
       drawEmptyChartText(ctx, width, height, 'No transaction data available for this timeframe');
       trendChartData = [];
@@ -568,9 +646,9 @@
 
     // Draw horizontal grid lines & labels
     const gridRows = 5;
-    ctx.strokeStyle = COLORS.gridLine;
+    ctx.strokeStyle = colors.gridLine;
     ctx.lineWidth = 1;
-    ctx.fillStyle = COLORS.textMuted;
+    ctx.fillStyle = colors.textMuted;
     ctx.font = '11px -apple-system, sans-serif';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
@@ -611,8 +689,8 @@
     if (activeMetric === 'revenue' || activeMetric === 'both') {
       // Area Fill
       const grad = ctx.createLinearGradient(0, padding.top, 0, height - padding.bottom);
-      grad.addColorStop(0, COLORS.primaryGradientStart);
-      grad.addColorStop(1, COLORS.primaryGradientEnd);
+      grad.addColorStop(0, colors.primaryGradientStart);
+      grad.addColorStop(1, colors.primaryGradientEnd);
 
       ctx.beginPath();
       ctx.moveTo(points[0].x, height - padding.bottom);
@@ -638,7 +716,7 @@
         ctx.quadraticCurveTo(points[i - 1].x, points[i - 1].yRevenue, xc, yc);
       }
       ctx.lineTo(points[points.length - 1].x, points[points.length - 1].yRevenue);
-      ctx.strokeStyle = COLORS.primary;
+      ctx.strokeStyle = colors.primary;
       ctx.lineWidth = 3;
       ctx.stroke();
 
@@ -648,7 +726,7 @@
         ctx.arc(p.x, p.yRevenue, 4, 0, Math.PI * 2);
         ctx.fillStyle = '#ffffff';
         ctx.fill();
-        ctx.strokeStyle = COLORS.primary;
+        ctx.strokeStyle = colors.primary;
         ctx.lineWidth = 2;
         ctx.stroke();
       });
@@ -664,7 +742,7 @@
         ctx.quadraticCurveTo(points[i - 1].x, points[i - 1].yOrders, xc, yc);
       }
       ctx.lineTo(points[points.length - 1].x, points[points.length - 1].yOrders);
-      ctx.strokeStyle = COLORS.secondary;
+      ctx.strokeStyle = colors.secondary;
       ctx.lineWidth = activeMetric === 'both' ? 2 : 3;
       if (activeMetric === 'both') {
         ctx.setLineDash([5, 4]);
@@ -679,7 +757,7 @@
         ctx.arc(p.x, p.yOrders, 3.5, 0, Math.PI * 2);
         ctx.fillStyle = '#ffffff';
         ctx.fill();
-        ctx.strokeStyle = COLORS.secondary;
+        ctx.strokeStyle = colors.secondary;
         ctx.lineWidth = 2;
         ctx.stroke();
       });
@@ -693,7 +771,7 @@
       ctx.beginPath();
       ctx.moveTo(hp.x, padding.top);
       ctx.lineTo(hp.x, height - padding.bottom);
-      ctx.strokeStyle = '#94a3b8';
+      ctx.strokeStyle = colors.textMuted;
       ctx.lineWidth = 1;
       ctx.setLineDash([4, 4]);
       ctx.stroke();
@@ -703,7 +781,7 @@
       if (activeMetric === 'revenue' || activeMetric === 'both') {
         ctx.beginPath();
         ctx.arc(hp.x, hp.yRevenue, 6, 0, Math.PI * 2);
-        ctx.fillStyle = COLORS.primary;
+        ctx.fillStyle = colors.primary;
         ctx.fill();
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2;
@@ -712,7 +790,7 @@
       if (activeMetric === 'orders' || activeMetric === 'both') {
         ctx.beginPath();
         ctx.arc(hp.x, hp.yOrders, 6, 0, Math.PI * 2);
-        ctx.fillStyle = COLORS.secondary;
+        ctx.fillStyle = colors.secondary;
         ctx.fill();
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2;
@@ -732,6 +810,8 @@
 
     const { ctx, width, height } = setupCanvas(canvas);
     ctx.clearRect(0, 0, width, height);
+
+    const colors = getThemeColors();
 
     const completed = items.filter(i => i.status === 'Completed');
     if (completed.length === 0) {
@@ -764,7 +844,7 @@
     categories.forEach((cat, index) => {
       const amount = catMap[cat];
       const sliceAngle = (amount / totalCompletedRev) * (Math.PI * 2);
-      const color = COLORS.categoryPalette[index % COLORS.categoryPalette.length];
+      const color = colors.categoryPalette[index % colors.categoryPalette.length];
       const isHovered = state.charts.donutHoverIndex === index;
 
       const segOuter = isHovered ? outerRadius + 6 : outerRadius;
@@ -792,13 +872,13 @@
     });
 
     // Center Label: Total Revenue
-    ctx.fillStyle = COLORS.textMuted;
+    ctx.fillStyle = colors.textMuted;
     ctx.font = '11px -apple-system, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('TOTAL SALES', centerX, centerY - 10);
 
-    ctx.fillStyle = COLORS.textDark;
+    ctx.fillStyle = colors.textDark;
     ctx.font = 'bold 15px -apple-system, sans-serif';
     ctx.fillText('$' + formatCompactNumber(totalCompletedRev), centerX, centerY + 10);
 
@@ -828,6 +908,8 @@
     const { ctx, width, height } = setupCanvas(canvas);
     ctx.clearRect(0, 0, width, height);
 
+    const colors = getThemeColors();
+
     const completed = items.filter(i => i.status === 'Completed');
     if (completed.length === 0) {
       drawEmptyChartText(ctx, width, height, 'No completed sales in this period');
@@ -856,19 +938,19 @@
       const barWidth = Math.max(6, (amount / maxRegRev) * barAreaWidth);
 
       // Label (Region Name)
-      ctx.fillStyle = COLORS.textDark;
+      ctx.fillStyle = colors.textDark;
       ctx.font = '500 12px -apple-system, sans-serif';
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
       ctx.fillText(region, padding.left - 12, y + barHeight / 2);
 
       // Background Track
-      ctx.fillStyle = '#f1f5f9';
+      ctx.fillStyle = colors.trackBg;
       drawRoundedRect(ctx, padding.left, y, barAreaWidth, barHeight, 6);
       ctx.fill();
 
       // Progress Bar
-      ctx.fillStyle = COLORS.primary;
+      ctx.fillStyle = colors.primary;
       drawRoundedRect(ctx, padding.left, y, barWidth, barHeight, 6);
       ctx.fill();
 
@@ -879,7 +961,7 @@
       if (barWidth > 70) {
         ctx.fillText(formatCurrency(amount), padding.left + barWidth - 8, y + barHeight / 2);
       } else {
-        ctx.fillStyle = COLORS.textDark;
+        ctx.fillStyle = colors.textDark;
         ctx.textAlign = 'left';
         ctx.fillText(formatCurrency(amount), padding.left + barWidth + 8, y + barHeight / 2);
       }
@@ -902,7 +984,7 @@
   }
 
   function drawEmptyChartText(ctx, width, height, text) {
-    ctx.fillStyle = COLORS.textMuted;
+    ctx.fillStyle = getThemeColors().textMuted;
     ctx.font = '13px -apple-system, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -1685,12 +1767,19 @@
 
     // Setup Canvas Chart Hover Tooltips
     setupChartInteractions();
+
+    // Theme Toggle Button
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    if (themeToggleBtn) {
+      themeToggleBtn.addEventListener('click', toggleTheme);
+    }
   }
 
   // --------------------------------------------------------------------------
   // Application Bootstrap
   // --------------------------------------------------------------------------
   function init() {
+    initTheme();
     loadData();
     setupEventListeners();
     refreshAll();
