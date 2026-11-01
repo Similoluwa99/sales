@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apex Sales Analytics Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Main Application Container -->
+  <div class="dashboard-wrapper">
+    <!-- Top Navigation Bar -->
+    <header class="dashboard-header">
+      <div class="header-brand">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1 class="brand-title">Apex Sales Analytics</h1>
+          <p class="brand-subtitle">Real-Time Revenue & Commerce Intelligence</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Time Range Selector -->
+        <div class="time-range-group">
+          <label for="timeRangeSelect" class="sr-only">Date Range</label>
+          <div class="select-wrapper">
+            <svg class="select-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <select id="timeRangeSelect" class="time-select">
+              <option value="7d">Last 7 Days</option>
+              <option value="30d" selected>Last 30 Days</option>
+              <option value="90d">Last 90 Days</option>
+              <option value="this-month">This Month</option>
+              <option value="this-year">This Year</option>
+              <option value="all">All Time</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <button id="addTransactionBtn" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Add Sale</span>
+        </button>
+
+        <div class="dropdown">
+          <button id="exportDropdownBtn" class="btn btn-secondary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Export / Backup</span>
+          </button>
+          <div id="exportMenu" class="dropdown-menu">
+            <button class="dropdown-item" id="exportCsvBtn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+              Export as CSV
+            </button>
+            <button class="dropdown-item" id="exportJsonBtn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+              Export as JSON Backup
+            </button>
+            <label class="dropdown-item file-input-label">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+              Restore from JSON
+              <input type="file" id="importJsonInput" accept=".json" style="display: none;">
+            </label>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item text-danger" id="resetDemoBtn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></svg>
+              Reset to Demo Data
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- KPI Metric Cards Grid -->
+    <section class="kpi-grid">
+      <!-- KPI 1: Total Revenue -->
+      <div class="kpi-card" id="kpiRevenueCard">
+        <div class="kpi-header">
+          <span class="kpi-label">Total Revenue</span>
+          <div class="kpi-icon-pill icon-revenue">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="1" x2="12" y2="23"></line>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+            </svg>
+          </div>
+        </div>
+        <div class="kpi-body">
+          <div class="kpi-value" id="kpiRevenue">$0.00</div>
+          <div class="kpi-footer">
+            <span class="kpi-trend trend-positive" id="kpiRevenueTrend">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+              <span id="kpiRevenueTrendVal">+0.0%</span>
+            </span>
+            <span class="kpi-subtext">vs previous period</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI 2: Total Orders -->
+      <div class="kpi-card" id="kpiOrdersCard">
+        <div class="kpi-header">
+          <span class="kpi-label">Total Orders</span>
+          <div class="kpi-icon-pill icon-orders">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="9" cy="21" r="1"></circle>
+              <circle cx="20" cy="21" r="1"></circle>
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+            </svg>
+          </div>
+        </div>
+        <div class="kpi-body">
+          <div class="kpi-value" id="kpiOrders">0</div>
+          <div class="kpi-footer">
+            <span class="kpi-trend trend-positive" id="kpiOrdersTrend">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+              <span id="kpiOrdersTrendVal">+0.0%</span>
+            </span>
+            <span class="kpi-subtext">vs previous period</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI 3: Average Order Value -->
+      <div class="kpi-card" id="kpiAovCard">
+        <div class="kpi-header">
+          <span class="kpi-label">Average Order Value</span>
+          <div class="kpi-icon-pill icon-aov">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+              <line x1="7" y1="7" x2="7.01" y2="7"></line>
+            </svg>
+          </div>
+        </div>
+        <div class="kpi-body">
+          <div class="kpi-value" id="kpiAov">$0.00</div>
+          <div class="kpi-footer">
+            <span class="kpi-trend trend-positive" id="kpiAovTrend">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+              <span id="kpiAovTrendVal">+0.0%</span>
+            </span>
+            <span class="kpi-subtext">vs previous period</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI 4: Completion Rate -->
+      <div class="kpi-card" id="kpiRateCard">
+        <div class="kpi-header">
+          <span class="kpi-label">Order Fulfillment Rate</span>
+          <div class="kpi-icon-pill icon-rate">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
+        </div>
+        <div class="kpi-body">
+          <div class="kpi-value" id="kpiFulfillmentRate">0.0%</div>
+          <div class="kpi-footer">
+            <span class="kpi-subtext" id="kpiFulfillmentSub">0 completed / 0 total</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Analytics Charts Section -->
+    <section class="charts-grid">
+      <!-- Main Trend Chart (Wide) -->
+      <div class="chart-card full-width">
+        <div class="chart-header">
+          <div class="chart-title-group">
+            <h2 class="chart-title">Revenue & Sales Trajectory</h2>
+            <p class="chart-description">Daily and cumulative transaction performance over selected timeframe</p>
+          </div>
+          <div class="chart-controls">
+            <div class="pill-toggle-group">
+              <button class="pill-btn active" data-metric="revenue">Revenue ($)</button>
+              <button class="pill-btn" data-metric="orders">Orders (Qty)</button>
+              <button class="pill-btn" data-metric="both">Combined</button>
+            </div>
+          </div>
+        </div>
+        <div class="canvas-container main-chart-container">
+          <canvas id="trendChartCanvas"></canvas>
+          <div id="trendChartTooltip" class="custom-tooltip"></div>
+        </div>
+      </div>
+
+      <!-- Secondary Chart 1: Category Breakdown (Donut) -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title-group">
+            <h2 class="chart-title">Sales by Category</h2>
+            <p class="chart-description">Revenue distribution across catalog sectors</p>
+          </div>
+        </div>
+        <div class="canvas-container donut-chart-container">
+          <canvas id="categoryChartCanvas"></canvas>
+          <div id="categoryChartTooltip" class="custom-tooltip"></div>
+        </div>
+        <div id="categoryLegend" class="chart-legend"></div>
+      </div>
+
+      <!-- Secondary Chart 2: Regional Performance (Horizontal Bars) -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title-group">
+            <h2 class="chart-title">Sales by Region</h2>
+            <p class="chart-description">Geographical revenue contribution</p>
+          </div>
+        </div>
+        <div class="canvas-container bar-chart-container">
+          <canvas id="regionChartCanvas"></canvas>
+          <div id="regionChartTooltip" class="custom-tooltip"></div>
+        </div>
+        <div id="regionList" class="region-stats-list"></div>
+      </div>
+    </section>
+
+    <!-- Insights & Quick Stats Banner -->
+    <section class="insights-banner">
+      <div class="insight-item">
+        <span class="insight-label">Top Category</span>
+        <span class="insight-val" id="insightTopCategory">--</span>
+      </div>
+      <div class="insight-divider"></div>
+      <div class="insight-item">
+        <span class="insight-label">Top Regional Market</span>
+        <span class="insight-val" id="insightTopRegion">--</span>
+      </div>
+      <div class="insight-divider"></div>
+      <div class="insight-item">
+        <span class="insight-label">Primary Payment Method</span>
+        <span class="insight-val" id="insightTopPayment">--</span>
+      </div>
+      <div class="insight-divider"></div>
+      <div class="insight-item">
+        <span class="insight-label">Max Single Sale</span>
+        <span class="insight-val text-success" id="insightHighestSale">$0.00</span>
+      </div>
+    </section>
+
+    <!-- Data Table Section -->
+    <section class="table-section">
+      <div class="table-card">
+        <div class="table-toolbar">
+          <div class="toolbar-left">
+            <h2 class="table-title">Recent Transactions</h2>
+            <span class="badge badge-neutral" id="tableTotalCount">0 records</span>
+          </div>
+
+          <div class="toolbar-right">
+            <!-- Search Input -->
+            <div class="search-box">
+              <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input type="text" id="tableSearchInput" placeholder="Search customer, item, order ID...">
+              <button id="clearSearchBtn" class="clear-search-btn" title="Clear search">&times;</button>
+            </div>
+
+            <!-- Category Filter -->
+            <select id="filterCategory" class="table-filter-select">
+              <option value="all">All Categories</option>
+              <option value="Electronics">Electronics</option>
+              <option value="Software & SaaS">Software & SaaS</option>
+              <option value="Apparel & Fashion">Apparel & Fashion</option>
+              <option value="Home & Office">Home & Office</option>
+              <option value="Professional Services">Professional Services</option>
+            </select>
+
+            <!-- Status Filter -->
+            <select id="filterStatus" class="table-filter-select">
+              <option value="all">All Statuses</option>
+              <option value="Completed">Completed</option>
+              <option value="Pending">Pending</option>
+              <option value="Refunded">Refunded</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="table-responsive">
+          <table class="data-table" id="salesTable">
+            <thead>
+              <tr>
+                <th class="sortable" data-sort="id">
+                  <div class="th-content"><span>Order ID</span><span class="sort-indicator"></span></div>
+                </th>
+                <th class="sortable" data-sort="date">
+                  <div class="th-content"><span>Date</span><span class="sort-indicator"></span></div>
+                </th>
+                <th class="sortable" data-sort="customer">
+                  <div class="th-content"><span>Customer</span><span class="sort-indicator"></span></div>
+                </th>
+                <th class="sortable" data-sort="product">
+                  <div class="th-content"><span>Product / Service</span><span class="sort-indicator"></span></div>
+                </th>
+                <th class="sortable" data-sort="category">
+                  <div class="th-content"><span>Category</span><span class="sort-indicator"></span></div>
+                </th>
+                <th class="sortable text-right" data-sort="amount">
+                  <div class="th-content justify-end"><span>Amount</span><span class="sort-indicator"></span></div>
+                </th>
+                <th><span>Payment</span></th>
+                <th class="sortable" data-sort="status">
+                  <div class="th-content"><span>Status</span><span class="sort-indicator"></span></div>
+                </th>
+                <th class="text-center"><span>Actions</span></th>
+              </tr>
+            </thead>
+            <tbody id="salesTableBody">
+              <!-- Rendered dynamically by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Table Empty State -->
+        <div id="tableEmptyState" class="empty-state" style="display: none;">
+          <div class="empty-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              <line x1="8" y1="11" x2="14" y2="11"></line>
+            </svg>
+          </div>
+          <h3 class="empty-title">No transactions found</h3>
+          <p class="empty-desc">Try adjusting your search criteria, date filters, or add a new transaction.</p>
+          <button class="btn btn-secondary btn-sm" id="emptyResetFiltersBtn">Reset Filters</button>
+        </div>
+
+        <!-- Table Pagination Footer -->
+        <div class="table-pagination">
+          <div class="pagination-info">
+            Showing <span id="paginationStart">0</span> to <span id="paginationEnd">0</span> of <span id="paginationTotal">0</span> entries
+          </div>
+
+          <div class="pagination-controls">
+            <div class="rows-per-page">
+              <label for="rowsPerPageSelect">Rows per page:</label>
+              <select id="rowsPerPageSelect">
+                <option value="10" selected>10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+              </select>
+            </div>
+
+            <div class="page-buttons" id="paginationPages">
+              <!-- Dynamic page buttons -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="dashboard-footer">
+      <p>Apex Sales Analytics &bull; Data stored securely in local browser storage &bull; Single-page application</p>
+    </footer>
+  </div>
+
+  <!-- Add / Edit Transaction Modal -->
+  <div id="transactionModal" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="modalTitle" class="modal-title">New Transaction</h3>
+        <button id="closeModalBtn" class="modal-close-btn">&times;</button>
+      </div>
+      <form id="transactionForm" class="modal-body">
+        <input type="hidden" id="formTransactionId">
+
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label for="formCustomer" class="form-label">Customer Name <span class="required">*</span></label>
+            <input type="text" id="formCustomer" class="form-control" required placeholder="e.g. Alex Morgan">
+          </div>
+          <div class="form-group col-6">
+            <label for="formEmail" class="form-label">Customer Email</label>
+            <input type="email" id="formEmail" class="form-control" placeholder="alex@company.com">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label for="formProduct" class="form-label">Product / Service <span class="required">*</span></label>
+            <input type="text" id="formProduct" class="form-control" required placeholder="e.g. Cloud Enterprise Plan">
+          </div>
+          <div class="form-group col-6">
+            <label for="formCategory" class="form-label">Category <span class="required">*</span></label>
+            <select id="formCategory" class="form-control" required>
+              <option value="Electronics">Electronics</option>
+              <option value="Software & SaaS">Software & SaaS</option>
+              <option value="Apparel & Fashion">Apparel & Fashion</option>
+              <option value="Home & Office">Home & Office</option>
+              <option value="Professional Services">Professional Services</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-4">
+            <label for="formAmount" class="form-label">Total Amount ($) <span class="required">*</span></label>
+            <input type="number" id="formAmount" class="form-control" step="0.01" min="0.01" required placeholder="0.00">
+          </div>
+          <div class="form-group col-4">
+            <label for="formQuantity" class="form-label">Quantity <span class="required">*</span></label>
+            <input type="number" id="formQuantity" class="form-control" min="1" value="1" required>
+          </div>
+          <div class="form-group col-4">
+            <label for="formPayment" class="form-label">Payment Method</label>
+            <select id="formPayment" class="form-control">
+              <option value="Credit Card">Credit Card</option>
+              <option value="PayPal">PayPal</option>
+              <option value="Stripe">Stripe</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+              <option value="Apple Pay">Apple Pay</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-4">
+            <label for="formRegion" class="form-label">Region</label>
+            <select id="formRegion" class="form-control">
+              <option value="North America">North America</option>
+              <option value="Europe">Europe</option>
+              <option value="Asia-Pacific">Asia-Pacific</option>
+              <option value="Latin America">Latin America</option>
+              <option value="Middle East & Africa">Middle East & Africa</option>
+            </select>
+          </div>
+          <div class="form-group col-4">
+            <label for="formStatus" class="form-label">Status <span class="required">*</span></label>
+            <select id="formStatus" class="form-control" required>
+              <option value="Completed">Completed</option>
+              <option value="Pending">Pending</option>
+              <option value="Refunded">Refunded</option>
+            </select>
+          </div>
+          <div class="form-group col-4">
+            <label for="formDate" class="form-label">Date <span class="required">*</span></label>
+            <input type="date" id="formDate" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="cancelModalBtn" class="btn btn-secondary">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Transaction</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="deleteModal" class="modal-backdrop">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-header">
+        <h3 class="modal-title">Delete Transaction</h3>
+        <button id="closeDeleteModalBtn" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete transaction <strong id="deleteOrderNumber"></strong>?</p>
+        <p class="text-muted" style="margin-top: 6px; font-size: 13px;">This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="cancelDeleteBtn" class="btn btn-secondary">Cancel</button>
+        <button type="button" id="confirmDeleteBtn" class="btn btn-danger">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
+
